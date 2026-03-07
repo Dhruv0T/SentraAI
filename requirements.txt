@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+opencv-python
+google-genai
+python-dotenv
+pydantic

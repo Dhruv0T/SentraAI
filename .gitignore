@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+.env
+!.env.example
+
+# Video files & outputs
+*.mp4
+*.avi
+*.pt
+*.log
+
+# Generated files
+altercation_report.txt
+test_out.*
+runs/
