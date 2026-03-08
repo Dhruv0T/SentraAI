@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Analysis Chat</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    select { padding: 0.5rem; width: 100%; margin-bottom: 0.5rem; }
+    #messages { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; min-height: 200px; max-height: 400px; overflow-y: auto; background: #f9f9f9; }
+    .msg { margin-bottom: 0.75rem; }
+    .msg.user { color: #0066cc; }
+    .msg.bot { color: #333; }
+    .msg.bot strong { color: #000; }
+    form { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+    input[type="text"] { flex: 1; padding: 0.5rem; }
+    button { padding: 0.5rem 1rem; background: #0066cc; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .loading { color: #666; font-style: italic; }
+    .error { color: #c00; }
+  </style>
+</head>
+<body>
+  <h1>Video Analysis Chat</h1>
+  <p>Ask questions about what was flagged in your analyzed videos.</p>
+  <label>Report:</label>
+  <select id="report"></select>
+  <div id="messages"></div>
+  <form id="form">
+    <input type="text" id="input" placeholder="e.g. What times were people flagged?" autocomplete="off" />
+    <button type="submit" id="send">Send</button>
+  </form>
+
+  <script>
+    const API = window.location.origin;
+    const msgEl = document.getElementById('messages');
+    const formEl = document.getElementById('form');
+    const inputEl = document.getElementById('input');
+    const reportEl = document.getElementById('report');
+    const sendBtn = document.getElementById('send');
+
+    async function loadReports() {
+      try {
+        const r = await fetch(API + '/reports');
+        const data = await r.json();
+        reportEl.innerHTML = data.reports.map(f => `<option value="${f}">${f}</option>`).join('');
+      } catch (e) {
+        reportEl.innerHTML = '<option>No reports</option>';
+      }
+    }
+
+    function addMsg(text, isUser) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (isUser ? 'user' : 'bot');
+      div.innerHTML = isUser ? text : '<strong>Assistant:</strong> ' + text;
+      msgEl.appendChild(div);
+      msgEl.scrollTop = msgEl.scrollHeight;
+    }
+
+    formEl.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const q = inputEl.value.trim();
+      if (!q) return;
+
+      addMsg(q, true);
+      inputEl.value = '';
+      sendBtn.disabled = true;
+      const loading = document.createElement('div');
+      loading.className = 'msg bot loading';
+      loading.textContent = 'Thinking...';
+      msgEl.appendChild(loading);
+      msgEl.scrollTop = msgEl.scrollHeight;
+
+      try {
+        const report = reportEl.value;
+        const body = { question: q };
+        if (report && report !== 'No reports') body.report_path = report;
+        const r = await fetch(API + '/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await r.json();
+        loading.remove();
+        if (r.ok) addMsg(data.answer, false);
+        else addMsg('Error: ' + (data.detail || JSON.stringify(data)), false);
+      } catch (e) {
+        loading.remove();
+        addMsg('Error: ' + e.message, false);
+      }
+      sendBtn.disabled = false;
+    });
+
+    loadReports();
+  </script>
+</body>
+</html>

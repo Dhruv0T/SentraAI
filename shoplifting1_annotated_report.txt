@@ -1,0 +1,4 @@
+Persona: Store Security
+Video: Shoplifting (1).mp4
+SUSPECT IDs: [1]
+Alert timestamps: [7.5]
